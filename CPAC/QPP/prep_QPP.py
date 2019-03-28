@@ -255,10 +255,11 @@ def use_inputs(group_config_file):
     import nibabel as nib
     import numpy as np
 
-
     qpp_dict,inclusion_list,resource_id,strat_info = prep_inputs(group_config_file)
     group_config_obj=load_config_yml(group_config_file)
+    use_other_function = False
     for key in qpp_dict:
+
         newer_output_df = qpp_dict[key]
 
         pipeline_ID = group_config_obj.pipeline_dir.rstrip('/').split('/')[-1]
@@ -272,51 +273,54 @@ def use_inputs(group_config_file):
 
         participant_id = newer_output_df['participant_id'].tolist()
         for element in participant_id:
-            scan = newer_output_df["Scan"].tolist()
-            for x in scan:
-                scan_number=x.split("-")[1]
-                nrn=max(scan_number)
-
+            if "Scan" in newer_output_df.columns:
+                scan_list=newer_output_df["Scan"].tolist()
+                nrn=len(set(scan_list))
+            elif "Session" in newer_output_df.columns:
+                session_list=newer_output_df["Session"].tolist()
+                nrn=len(set(session_list))
+            else:
+                nrn=1
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        use_other_function=False
         subject_list=newer_output_df["Filepath"].tolist()
         for subject in subject_list:
             sub_img=nib.load(subject)
             if sub_img.shape==3:
-                use_other_function=False
-                #merge_outfile = os.path.join(out_dir,'_merged.nii.gz')
-                #merge_file = create_merged_copefile(newer_output_df["Filepath"].tolist(), merge_outfile)
-                #merge_mask = create_merge_mask(merge_file, merge_mask_outfile)
+               use_other_function=False
+               merge_outfile = os.path.join(out_dir,'_merged.nii.gz')
+               merge_file = create_merged_copefile(newer_output_df["Filepath"].tolist(), merge_outfile)
+               merge_mask_outfile=os.path.join(out_dir,'_merged_mask.nii.gz')
+               merge_mask = create_merge_mask(merge_file, merge_mask_outfile)
                 #return merge_file, merge_mask
             else:
-                use_other_function=True
+               use_other_function=True
+               merge_outfile = os.path.join(out_dir, '_merged.nii.gz')
+               merge_file = create_merged_copefile(newer_output_df["Filepath"].tolist(), merge_outfile)
+               merge_mask_outfile = os.path.join(out_dir, '_merged_mask.nii.gz')
+               merge_mask = create_merge_mask(merge_file, merge_mask_outfile)
+                
+    return use_other_function,merge_file, merge_mask,subject_list,inclusion_list,out_dir,nrn
 
-                #nsubj =len(subject_list)
-
-    return use_other_function,subject_list,inclusion_list,out_dir,nrn
-
-
-def balance_df(new_output_df, sessions_list, scan_list):
+  
+def balance_df(new_output_df,session_list,scan_list):
     import pandas as pd
     from collections import Counter
 
     part_ID_count = Counter(new_output_df["participant_id"])
 
-    if scan_list and sessions_list:
-        sessions_x_scans = len(sessions_list)*len(scan_list)
-    elif sessions_list:
-        sessions_x_scans = len(sessions_list)
+    print(part_ID_count)
+    if scan_list and session_list:
+        sessions_x_scans= len(session_list)*len(scan_list)
+    elif session_list:
+            sessions_x_scans = len(session_list)
     elif scan_list:
-        sessions_x_scans = len(scan_list)
-
+            sessions_x_scans = len(scan_list)
     dropped_parts = []
     for part_ID in part_ID_count.keys():
         if part_ID_count[part_ID] != sessions_x_scans:
-            new_output_df=new_output_df[new_output_df.participant_id != part_ID]
-            del new_output_df[part_ID]
+            new_output_df = new_output_df[new_output_df.participant_id != part_ID]
             dropped_parts.append(part_ID)
-
+    print(new_output_df)
+    
     return new_output_df, dropped_parts
-
-
