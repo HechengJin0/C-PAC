@@ -90,10 +90,10 @@ ENV PATH $C3DPATH/bin:$PATH
 COPY required_afni_pkgs.txt /opt/required_afni_pkgs.txt
 RUN libs_path=/usr/lib/x86_64-linux-gnu && \
     if [ -f $libs_path/libgsl.so.19 ]; then \
-           ln $libs_path/libgsl.so.19 $libs_path/libgsl.so.0; \
+         ln $libs_path/libgsl.so.19 $libs_path/libgsl.so.0; \
     fi && \
     mkdir -p /opt/afni && \
-    wget -q http://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz && \
+    curl -sO https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz && \
     tar zxv -C /opt/afni --strip-components=1 -f linux_openmp_64.tgz $(cat /opt/required_afni_pkgs.txt) && \
     rm -rf linux_openmp_64.tgz
 
