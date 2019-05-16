@@ -371,7 +371,7 @@ with open(data_config_file, 'w') as f:
 if args.analysis_level == "participant":
     # build pipeline easy way
     import CPAC
-    from nipype.pipeline.plugins.callback_log import log_nodes_cb
+    from CPAC.utils.monitoring import log_nodes_cb
 
     plugin_args = {'n_procs': int(c['maxCoresPerParticipant']),
                    'memory_gb': int(c['maximumMemoryPerParticipant']),
